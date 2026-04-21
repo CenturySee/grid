@@ -8,6 +8,9 @@ import pandas as pd
 
 from .models import PriceContext
 
+AdjustMethod = Literal["none", "forward", "backward"]
+AdjustedMethod = Literal["forward", "backward"]
+
 
 TDX_ROOTS = {
     "sh": Path("C:/new_tdx/vipdoc/sh"),
@@ -69,7 +72,7 @@ def load_tdx_daily_history(symbol: str) -> pd.DataFrame:
     return df.sort_values("date").reset_index(drop=True)
 
 
-def load_adjust_factor(symbol: str, adjust_method: Literal["forward", "backward"] = "forward") -> pd.DataFrame:
+def load_adjust_factor(symbol: str, adjust_method: AdjustedMethod = "forward") -> pd.DataFrame:
     """Load adjustment factors through opentdx.stock_adjust_factor_by_xdxr.
 
     This function intentionally keeps a narrow contract because opentdx package
@@ -119,7 +122,7 @@ def load_adjust_factor(symbol: str, adjust_method: Literal["forward", "backward"
 def apply_adjust_factor(
     history: pd.DataFrame,
     factors: pd.DataFrame,
-    method: Literal["forward", "backward"] = "forward",
+    method: AdjustedMethod = "forward",
 ) -> pd.DataFrame:
     """Apply xdxr factors to raw OHLC prices.
 
@@ -134,7 +137,7 @@ def apply_adjust_factor(
 
     df = history.sort_values("date").copy()
     factors = factors.sort_values("date")[["date", "factor"]].copy()
-    merged = pd.merge_asof(df, factors, on="date", direction="backward")
+    merged = pd.merge_asof(df, factors, on="date", direction="backward", allow_exact_matches=False)
     merged["factor"] = merged["factor"].ffill().bfill()
 
     if method == "forward":
@@ -154,8 +157,13 @@ def apply_adjust_factor(
     return adjusted
 
 
-def load_adjusted_daily_history(symbol: str, adjust_method: Literal["forward", "backward"] = "forward") -> pd.DataFrame:
+def load_adjusted_daily_history(symbol: str, adjust_method: AdjustMethod = "forward") -> pd.DataFrame:
     raw_history = load_tdx_daily_history(symbol)
+    if adjust_method == "none":
+        raw_history = raw_history.copy()
+        raw_history["adjust_factor"] = 1.0
+        raw_history["adjust_method"] = "none"
+        return raw_history
     factors = load_adjust_factor(symbol, adjust_method=adjust_method)
     return apply_adjust_factor(raw_history, factors, method=adjust_method)
 

@@ -94,8 +94,8 @@ def build_plan_from_config(config: GridV1Config):
     price_context = build_price_context(
         history=history,
         first_price=first_price,
-        source="tdx_offline_adjusted",
-        adjusted=True,
+        source="tdx_offline_raw" if args.adjust_method == "none" else "tdx_offline_adjusted",
+        adjusted=args.adjust_method != "none",
         adjust_method=args.adjust_method,
         start_date=args.start_date,
         end_date=args.end_date,
@@ -129,7 +129,7 @@ def make_plan_payload(config: GridV1Config) -> dict[str, Any]:
 
 
 def make_backtest_payload(config: GridV1Config, initial_cash: float | None = None) -> dict[str, Any]:
-    backtest_config = config.model_copy(update={"adjust_method": "forward", "price_digits": 3})
+    backtest_config = config.model_copy(update={"price_digits": 3})
     plan, history = build_plan_from_config(backtest_config)
     trades, equity, days, summary = run_grid_v1_backtest(plan, history, initial_cash=initial_cash)
     return {
@@ -147,4 +147,3 @@ def make_backtest_payload(config: GridV1Config, initial_cash: float | None = Non
 
 def load_config_from_path(path: Path) -> GridV1Config:
     return GridV1Config(**load_config_file(path))
-

@@ -26,12 +26,13 @@ export function ParameterPanel({
     onChange({ ...config, [key]: value })
   }
 
-  const numberInput = (key: FieldKey, label: string, step = '0.001') => (
+  const numberInput = (key: FieldKey, label: string, step = '0.001', disabled = false) => (
     <div className="field">
       <label>{label}</label>
       <input
         type="number"
         step={step}
+        disabled={disabled}
         value={(config[key] as number | null) ?? ''}
         onChange={(event) => update(key, parseNullableNumber(event.target.value) as never)}
       />
@@ -60,6 +61,7 @@ export function ParameterPanel({
               value={config.adjust_method}
               onChange={(event) => update('adjust_method', event.target.value as GridConfig['adjust_method'])}
             >
+              <option value="none">不复权</option>
               <option value="forward">前复权</option>
               <option value="backward">后复权</option>
             </select>
@@ -81,6 +83,11 @@ export function ParameterPanel({
             />
           </div>
         </div>
+        <div className="section-actions">
+          <button className="button" onClick={onLoadHistory} disabled={busy}>
+            加载行情
+          </button>
+        </div>
       </section>
 
       <section className="section">
@@ -96,8 +103,13 @@ export function ParameterPanel({
               <option value="drawdown_from_high">距高点回撤</option>
             </select>
           </div>
-          {numberInput('first_price', '首网价格', '0.001')}
-          {numberInput('high_drawdown_pct', '高点回撤比例', '0.01')}
+          {numberInput('first_price', '首网价格', '0.001', config.first_price_mode !== 'fixed')}
+          {numberInput(
+            'high_drawdown_pct',
+            '高点回撤比例',
+            '0.01',
+            config.first_price_mode !== 'drawdown_from_high',
+          )}
         </div>
       </section>
 
@@ -116,8 +128,13 @@ export function ParameterPanel({
               <option value="drawdown_from_first">距首网回撤</option>
             </select>
           </div>
-          {numberInput('bottom_price', '底部价格', '0.001')}
-          {numberInput('bottom_drawdown_pct', '首网回撤比例', '0.01')}
+          {numberInput('bottom_price', '底部价格', '0.001', config.bottom_mode !== 'fixed')}
+          {numberInput(
+            'bottom_drawdown_pct',
+            '首网回撤比例',
+            '0.01',
+            config.bottom_mode !== 'drawdown_from_first',
+          )}
         </div>
       </section>
 
@@ -157,9 +174,6 @@ export function ParameterPanel({
       </section>
 
       <div className="actions">
-        <button className="button" onClick={onLoadHistory} disabled={busy}>
-          加载行情
-        </button>
         <button className="button primary" onClick={onGeneratePlan} disabled={busy || validations.length > 0}>
           生成计划
         </button>
@@ -170,4 +184,3 @@ export function ParameterPanel({
     </aside>
   )
 }
-

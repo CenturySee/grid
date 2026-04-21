@@ -5,6 +5,9 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field
 
 
+AdjustMethod = Literal["none", "forward", "backward"]
+
+
 class GridV1Config(BaseModel):
     symbol: str = "sh510300"
     first_price_mode: Literal["fixed", "drawdown_from_high"] = "fixed"
@@ -12,7 +15,7 @@ class GridV1Config(BaseModel):
     high_drawdown_pct: float | None = 0.2
     start_date: str | None = None
     end_date: str | None = None
-    adjust_method: Literal["forward", "backward"] = "forward"
+    adjust_method: AdjustMethod = "forward"
     grid_pct: float = 0.05
     bottom_mode: Literal["fixed", "drawdown_from_first"] = "fixed"
     bottom_price: float | None = 3.0
@@ -32,7 +35,7 @@ class HistoryRequest(BaseModel):
     symbol: str = "sh510300"
     start_date: str | None = None
     end_date: str | None = None
-    adjust_method: Literal["forward", "backward"] = "forward"
+    adjust_method: AdjustMethod = "forward"
 
 
 class BacktestRequest(BaseModel):
@@ -45,4 +48,3 @@ class ConfigTextRequest(BaseModel):
 
 
 JsonDict = dict[str, Any]
-

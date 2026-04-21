@@ -289,7 +289,7 @@ def summarize_backtest(
                 "symbol": plan.config.symbol,
                 "start_date": history["date"].iloc[0].date().isoformat(),
                 "end_date": history["date"].iloc[-1].date().isoformat(),
-                "adjust_method": "forward",
+                "adjust_method": plan.price_context.adjust_method if plan.price_context else "-",
                 "bar_mode": "daily_conservative",
                 "initial_cash": initial_cash,
                 "final_equity": final_equity,

@@ -1,6 +1,7 @@
 export type AmountMode = 'equal' | 'arithmetic'
 export type FirstPriceMode = 'fixed' | 'drawdown_from_high'
 export type BottomMode = 'fixed' | 'drawdown_from_first'
+export type AdjustMethod = 'none' | 'forward' | 'backward'
 
 export type GridConfig = {
   symbol: string
@@ -9,7 +10,7 @@ export type GridConfig = {
   high_drawdown_pct: number | null
   start_date: string | null
   end_date: string | null
-  adjust_method: 'forward' | 'backward'
+  adjust_method: AdjustMethod
   grid_pct: number
   bottom_mode: BottomMode
   bottom_price: number | null
@@ -90,4 +91,3 @@ export type BacktestPayload = {
   days: DayRecord[]
   warnings: string[]
 }
-
