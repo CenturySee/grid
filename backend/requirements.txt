@@ -1,0 +1,7 @@
+pandas
+pyyaml
+pytdx
+opentdx
+fastapi
+uvicorn
+

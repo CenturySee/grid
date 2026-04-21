@@ -150,3 +150,39 @@ rules.md              本地环境与数据规则
 
 `outputs/` 为生成结果目录，已加入 `.gitignore`。
 
+## Web 工作台
+
+当前提供一个本地 Web 工作台，用于交互式调整参数、查看 K 线、生成网格计划并运行轻量回测。
+
+启动后端：
+
+```powershell
+& 'C:\Users\xzq-telecom\miniconda3\envs\py312\python.exe' -m uvicorn backend.app.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+启动前端：
+
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+默认访问：
+
+```text
+http://127.0.0.1:5173
+```
+
+前端接口默认连接：
+
+```text
+http://127.0.0.1:8000
+```
+
+如需调整后端地址，可以在前端设置环境变量：
+
+```powershell
+$env:VITE_API_BASE="http://127.0.0.1:8000"
+npm run dev
+```
