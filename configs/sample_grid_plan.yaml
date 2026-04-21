@@ -1,0 +1,67 @@
+# 标的代码：支持 sh/sz/bj 前缀，例如 sh510300、sz159915
+symbol: sh510300
+
+# 首网点位模式：
+# fixed = 手工指定 first_price
+# drawdown_from_high = 使用复权历史最高点回撤 high_drawdown_pct 后的价格
+first_price_mode: fixed
+
+# 首网买入价格：first_price_mode 为 fixed 时必填
+first_price: 4.0
+
+# 历史高点回撤比例：first_price_mode 为 drawdown_from_high 时使用，例如 0.2 表示从高点回撤 20%
+high_drawdown_pct: 0.2
+
+# 历史行情统计起始日期：为空表示使用全部可读历史数据
+start_date:
+
+# 历史行情统计结束日期：为空表示截至最新可读数据
+end_date:
+
+# 复权方式：
+# forward = 前复权口径，适合把历史价格调整到当前价格尺度
+# backward = 后复权口径，适合把当前价格调整到历史价格尺度
+adjust_method: forward
+
+# 网格大小：以首网价格为基准的固定价差比例，例如 0.05 表示每格价差 = 首网价格 * 5%
+grid_pct: 0.05
+
+# 底部点位模式：
+# fixed = 手工指定 bottom_price
+# drawdown_from_first = 使用首网价格回撤 bottom_drawdown_pct 后的价格
+bottom_mode: fixed
+
+# 压力测试底部价格：bottom_mode 为 fixed 时必填
+bottom_price: 3.0
+
+# 首网回撤比例：bottom_mode 为 drawdown_from_first 时使用，例如 0.4 表示首网再下跌 40%
+bottom_drawdown_pct: 0.4
+
+# 第一网计划投入金额
+first_amount: 10000
+
+# 投入金额模式：
+# equal = 每网等额
+# arithmetic = 等差递增，每网增加 amount_step
+amount_mode: arithmetic
+
+# 等差递增步长：amount_mode 为 arithmetic 时使用
+amount_step: 500
+
+# 交易最小单位：A 股/ETF 通常为 100
+lot_size: 100
+
+# 单边手续费率，例如 0.0002 表示万二
+fee_rate: 0.0002
+
+# 单笔最低手续费
+min_fee: 5
+
+# 单边滑点率，例如 0.0005 表示买入多付 0.05%、卖出少收 0.05%
+slippage_rate: 0.0005
+
+# 价格保留小数位：1.0 计划和轻量回测建议统一保留 3 位，减少浮点精度噪音
+price_digits: 3
+
+# 输出文件名前缀：会生成 *_levels.csv、*_summary.csv、*_report.md
+basename: sample_config_v1
