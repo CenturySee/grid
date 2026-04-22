@@ -1,11 +1,12 @@
 # Grid Strategy Planner
 
-网格策略 1.0 计划生成与轻量历史回放工具。
+网格策略 1.0-2.3 计划生成与轻量历史回放工具。
 
 当前版本聚焦两件事：
 
 - 生成网格交易计划表，并完成底部压力测试。
 - 使用前复权日线数据做轻量历史回放，观察历史触发、资金占用、浮亏和收益表现。
+- 在 1.0 基础上支持留利润、逐格加码增强、多子网格共用资金池。
 
 > 说明：本项目目前是研究与辅助决策工具，不包含实盘交易接口，也不构成投资建议。
 
@@ -16,8 +17,12 @@
 - 支持固定底部价格。
 - 支持从首网价格继续回撤生成压力测试底部。
 - 网格价格使用固定价差：`grid_step = first_price * grid_pct`。
-- 支持每网等额投入、等差递增投入。
+- 支持每网等额投入、等差递增投入、等比递增投入。
+- 支持从第 N 格开始加码。
+- 支持 2.1 留利润：卖出时回收本金，剩余整手份额作为留存仓位。
+- 支持 2.3 一网打尽：小网、中网、大网多子网格共用资金池。
 - 支持交易单位、手续费、最低手续费、滑点。
+- 买入、卖出、留存份额均按 `lot_size` 整手处理，默认 `100`。
 - 支持本地通达信离线行情读取。
 - 支持通过 `opentdx` 获取除权除息复权因子。
 - 计划与回测默认使用前复权数据。
@@ -67,11 +72,15 @@ adjust_method: forward
 
 示例配置：
 
-[configs/sample_grid_plan.yaml](configs/sample_grid_plan.yaml)
+- 1.0 基础网格：[configs/sample_grid_plan.yaml](configs/sample_grid_plan.yaml)
+- 2.1 留利润：[configs/sample_grid_v2_1_retain_profit.yaml](configs/sample_grid_v2_1_retain_profit.yaml)
+- 2.2 逐格加码增强：[configs/sample_grid_v2_2_scale.yaml](configs/sample_grid_v2_2_scale.yaml)
+- 2.3 一网打尽：[configs/sample_grid_v2_3_multi_grid.yaml](configs/sample_grid_v2_3_multi_grid.yaml)
 
 常用字段：
 
 - `symbol`：标的代码，例如 `sh510300`。
+- `strategy_version`：策略版本，支持 `1.0`、`2.1`、`2.2`、`2.3`。
 - `first_price_mode`：首网点位模式，支持 `fixed`、`drawdown_from_high`。
 - `first_price`：固定首网价格。
 - `high_drawdown_pct`：从历史高点回撤比例。
@@ -81,14 +90,59 @@ adjust_method: forward
 - `bottom_price`：固定底部价格。
 - `bottom_drawdown_pct`：从首网继续回撤比例。
 - `first_amount`：第一网计划投入金额。
-- `amount_mode`：投入模式，支持 `equal`、`arithmetic`。
+- `amount_mode`：投入模式，支持 `equal`、`arithmetic`、`geometric`。
 - `amount_step`：等差递增步长。
+- `amount_ratio`：等比递增倍率。
+- `scale_start_level`：从第几格开始加码，默认 `1`。
+- `price_start_level`：从第几格价格开始买入；2.3 中可让中网、大网跳过首网。
+- `retain_profit.enabled`：是否启用留利润。
+- `retain_profit.multiplier`：留利润倍数，`1` 表示普通留利润，`2` 表示留双份利润。
+- `sub_grids`：2.3 多子网格配置，每个子网格可独立设置 `grid_name`、`grid_pct`、`first_amount`、加码规则和留利润规则。
 - `lot_size`：交易单位。
 - `fee_rate`：单边手续费率。
 - `min_fee`：单笔最低手续费。
 - `slippage_rate`：单边滑点率。
 - `price_digits`：价格保留位数，建议为 `3`。
 - `basename`：输出文件名前缀。
+
+### 策略版本
+
+`1.0`：基础网格。触发卖出时卖出整笔网格仓位。
+
+`2.1`：留利润。触发卖出时优先卖出用于回收成本的整手份额，剩余整手份额进入留存仓位，不再参与普通网格卖出。
+
+`2.2`：逐格加码增强。在 2.1 基础上支持 `scale_start_level`，并支持 `geometric` 等比递增。
+
+`2.3`：一网打尽。通过 `sub_grids` 同时配置小网、中网、大网；所有子网格共享同一资金池。通常小网 `price_start_level: 1`，中网和大网 `price_start_level: 2`，避免重复覆盖首网。
+
+2.3 子网格示例：
+
+```yaml
+strategy_version: "2.3"
+
+sub_grids:
+  - grid_name: small
+    enabled: true
+    grid_pct: 0.05
+    first_amount: 8000
+    amount_mode: equal
+    price_start_level: 1
+    retain_profit:
+      enabled: true
+      multiplier: 1
+
+  - grid_name: medium
+    enabled: true
+    grid_pct: 0.15
+    first_amount: 6000
+    amount_mode: arithmetic
+    amount_step: 500
+    scale_start_level: 2
+    price_start_level: 2
+    retain_profit:
+      enabled: true
+      multiplier: 1
+```
 
 ## 生成网格计划
 
@@ -109,6 +163,8 @@ outputs/{basename}_report.md
 - 压力测试摘要。
 - 首网价格区间统计。
 - 网格明细。
+- 2.x 策略版本、留利润和加码规则。
+- 2.3 子网格名称。
 - 风险提示。
 
 ## 轻量历史回放
@@ -134,8 +190,11 @@ outputs/{basename}_backtest_report.md
 - `high >= sell_price` 触发卖出。
 - 如果开盘直接越过买入价或卖出价，按开盘价成交并标记为 `gap_open`。
 - 同一天可能触发多个网格。
-- 每个网格同一时间只持有一笔。
+- 每个子网格的每个价格层级同一时间只持有一笔。
 - 采用保守日线回放：同一天新买入的网格不会在当天卖出。
+- 买入、卖出、留存份额均为 `lot_size` 的整数倍。
+- 2.1+ 留存仓位计入每日权益、回测摘要和报告。
+- 2.3 回测摘要包含 `grid_summaries`，用于查看各子网格交易次数、已实现利润和留存份额。
 
 ## 目录
 
@@ -154,6 +213,15 @@ rules.md              本地环境与数据规则
 
 当前提供一个本地 Web 工作台，用于交互式调整参数、查看 K 线、生成网格计划并运行轻量回测。
 
+工作台支持选择策略版本：
+
+- `1.0 基础网格`
+- `2.1 留利润`
+- `2.2 加码增强`
+- `2.3 一网打尽`
+
+2.3 模式下，右侧参数面板会显示可折叠的 `small`、`medium`、`large` 子网格配置；交易成本与输出参数默认折叠。
+
 启动后端：
 
 ```powershell
@@ -168,11 +236,13 @@ npm install
 npm run dev
 ```
 
-默认访问：
+默认访问通常为：
 
 ```text
 http://127.0.0.1:5173
 ```
+
+如果前端运行在其他本地端口，例如 `3000`，后端 CORS 已允许 `localhost` / `127.0.0.1` 的本地开发端口访问。
 
 前端接口默认连接：
 
