@@ -1,0 +1,30 @@
+# 网格 2.1：基础网格 + 留利润
+strategy_version: "2.1"
+
+symbol: sh510300
+first_price_mode: fixed
+first_price: 4.0
+high_drawdown_pct: 0.2
+start_date:
+end_date:
+adjust_method: forward
+
+grid_pct: 0.05
+bottom_mode: fixed
+bottom_price: 3.0
+bottom_drawdown_pct: 0.4
+
+first_amount: 10000
+amount_mode: arithmetic
+amount_step: 500
+
+retain_profit:
+  enabled: true
+  multiplier: 1
+
+lot_size: 100
+fee_rate: 0.0002
+min_fee: 5
+slippage_rate: 0.0005
+price_digits: 3
+basename: sample_config_v2_1_retain_profit

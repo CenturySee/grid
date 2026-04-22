@@ -64,7 +64,7 @@ export function GridWorkbench() {
       <header className="topbar">
         <div className="brand">
           <h1>Grid Strategy Workbench</h1>
-          <span>网格 1.0 计划与回测</span>
+          <span>网格 {config.strategy_version} 计划与回测</span>
         </div>
         <div className={`topbar-status ${error ? 'error' : ''}`}>{error ?? message}</div>
       </header>
@@ -123,10 +123,29 @@ function validateConfig(config: GridConfig): string[] {
     items.push('底部价格必须低于首网价格')
   }
   if (config.first_amount <= 0) items.push('首网投入金额必须大于 0')
+  if (config.scale_start_level <= 0) items.push('开始加码格必须大于 0')
+  if (config.amount_mode === 'arithmetic' && config.amount_step < 0) items.push('等差递增金额不能小于 0')
+  if (config.amount_mode === 'geometric' && config.amount_ratio <= 0) items.push('等比递增倍率必须大于 0')
+  if (config.strategy_version !== '1.0' && config.retain_profit.enabled && config.retain_profit.multiplier <= 0) {
+    items.push('留利润倍数必须大于 0')
+  }
+  if (config.strategy_version === '2.3') {
+    const enabledSubGrids = config.sub_grids.filter((item) => item.enabled)
+    if (!enabledSubGrids.length) items.push('2.3 至少需要启用一个子网格')
+    enabledSubGrids.forEach((item) => {
+      if (!item.grid_name.trim()) items.push('子网格名称不能为空')
+      if (item.grid_pct <= 0 || item.grid_pct >= 1) items.push(`${item.grid_name} 网格比例必须在 0 到 1 之间`)
+      if (item.first_amount <= 0) items.push(`${item.grid_name} 投入金额必须大于 0`)
+      if (item.price_start_level <= 0) items.push(`${item.grid_name} 价格起始格必须大于 0`)
+      if (item.scale_start_level <= 0) items.push(`${item.grid_name} 开始加码格必须大于 0`)
+      if (item.amount_mode === 'arithmetic' && item.amount_step < 0) items.push(`${item.grid_name} 等差递增金额不能小于 0`)
+      if (item.amount_mode === 'geometric' && item.amount_ratio <= 0) items.push(`${item.grid_name} 等比递增倍率必须大于 0`)
+      if (item.retain_profit.enabled && item.retain_profit.multiplier <= 0) items.push(`${item.grid_name} 留利润倍数必须大于 0`)
+    })
+  }
   if (config.lot_size <= 0) items.push('交易单位必须大于 0')
   if (config.start_date && config.end_date && config.start_date > config.end_date) {
     items.push('起始日期不能晚于结束日期')
   }
   return items
 }
-

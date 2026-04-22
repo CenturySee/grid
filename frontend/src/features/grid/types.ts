@@ -1,9 +1,29 @@
-export type AmountMode = 'equal' | 'arithmetic'
+export type AmountMode = 'equal' | 'arithmetic' | 'geometric'
 export type FirstPriceMode = 'fixed' | 'drawdown_from_high'
 export type BottomMode = 'fixed' | 'drawdown_from_first'
 export type AdjustMethod = 'none' | 'forward' | 'backward'
+export type StrategyVersion = '1.0' | '2.1' | '2.2' | '2.3'
+
+export type RetainProfitConfig = {
+  enabled: boolean
+  multiplier: number
+}
+
+export type SubGridConfig = {
+  grid_name: string
+  enabled: boolean
+  grid_pct: number
+  first_amount: number
+  amount_mode: AmountMode
+  amount_step: number
+  amount_ratio: number
+  scale_start_level: number
+  price_start_level: number
+  retain_profit: RetainProfitConfig
+}
 
 export type GridConfig = {
+  strategy_version: StrategyVersion
   symbol: string
   first_price_mode: FirstPriceMode
   first_price: number | null
@@ -18,6 +38,11 @@ export type GridConfig = {
   first_amount: number
   amount_mode: AmountMode
   amount_step: number
+  amount_ratio: number
+  scale_start_level: number
+  price_start_level: number
+  retain_profit: RetainProfitConfig
+  sub_grids: SubGridConfig[]
   lot_size: number
   fee_rate: number
   min_fee: number
@@ -49,6 +74,7 @@ export type HistoryPayload = {
 }
 
 export type GridLevel = {
+  grid_name?: string
   level_index: number
   buy_price: number
   sell_price: number
@@ -60,6 +86,10 @@ export type GridLevel = {
   amount_usage_pct: number
   expected_profit: number
   expected_return_pct: number
+  expected_sold_shares?: number
+  expected_retained_shares?: number
+  expected_retained_value?: number
+  expected_sell_mode?: string
   cumulative_cost: number
   warning: string
 }

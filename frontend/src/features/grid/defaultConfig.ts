@@ -1,6 +1,7 @@
 import type { GridConfig } from './types'
 
 export const defaultGridConfig: GridConfig = {
+  strategy_version: '1.0',
   symbol: 'sh510300',
   first_price_mode: 'fixed',
   first_price: 4,
@@ -15,6 +16,51 @@ export const defaultGridConfig: GridConfig = {
   first_amount: 10000,
   amount_mode: 'arithmetic',
   amount_step: 500,
+  amount_ratio: 1.05,
+  scale_start_level: 1,
+  price_start_level: 1,
+  retain_profit: {
+    enabled: false,
+    multiplier: 1,
+  },
+  sub_grids: [
+    {
+      grid_name: 'small',
+      enabled: true,
+      grid_pct: 0.05,
+      first_amount: 8000,
+      amount_mode: 'equal',
+      amount_step: 0,
+      amount_ratio: 1,
+      scale_start_level: 1,
+      price_start_level: 1,
+      retain_profit: { enabled: true, multiplier: 1 },
+    },
+    {
+      grid_name: 'medium',
+      enabled: true,
+      grid_pct: 0.15,
+      first_amount: 6000,
+      amount_mode: 'arithmetic',
+      amount_step: 500,
+      amount_ratio: 1,
+      scale_start_level: 2,
+      price_start_level: 2,
+      retain_profit: { enabled: true, multiplier: 1 },
+    },
+    {
+      grid_name: 'large',
+      enabled: true,
+      grid_pct: 0.3,
+      first_amount: 4000,
+      amount_mode: 'geometric',
+      amount_step: 0,
+      amount_ratio: 1.08,
+      scale_start_level: 2,
+      price_start_level: 2,
+      retain_profit: { enabled: true, multiplier: 1 },
+    },
+  ],
   lot_size: 100,
   fee_rate: 0.0002,
   min_fee: 5,
@@ -22,4 +68,3 @@ export const defaultGridConfig: GridConfig = {
   price_digits: 3,
   basename: 'sample_config_v1',
 }
-

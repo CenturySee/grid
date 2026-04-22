@@ -10,8 +10,8 @@ import pandas as pd
 from src.backtest_v1 import run_grid_v1_backtest
 from src.config_loader import load_config_file
 from src.data_loader import build_price_context, filter_history, load_adjusted_daily_history
-from src.grid_plan import build_grid_plan
-from src.models import AmountMode, BottomMode, FirstPriceMode, GridPlanConfig
+from src.grid_plan import build_grid_plan, combine_grid_plans
+from src.models import AmountMode, BottomMode, FirstPriceMode, GridPlanConfig, RetainProfitConfig as CoreRetainProfitConfig
 
 from backend.app.schemas.grid_v1 import GridV1Config
 
@@ -59,6 +59,13 @@ def namespace_from_config(config: GridV1Config) -> Namespace:
     return Namespace(**config.model_dump())
 
 
+def retain_profit_value(args: Namespace, key: str, default: Any) -> Any:
+    retain_profit = getattr(args, "retain_profit", None)
+    if isinstance(retain_profit, dict):
+        return retain_profit.get(key, default)
+    return getattr(retain_profit, key, default)
+
+
 def resolve_first_price(args: Namespace, history: pd.DataFrame) -> float:
     mode = FirstPriceMode(args.first_price_mode)
     if mode == FirstPriceMode.FIXED:
@@ -100,19 +107,54 @@ def build_plan_from_config(config: GridV1Config):
         start_date=args.start_date,
         end_date=args.end_date,
     )
-    plan_config = GridPlanConfig(
+    base_kwargs = dict(
         symbol=args.symbol,
         first_price=first_price,
-        grid_pct=args.grid_pct,
         bottom_price=bottom_price,
-        first_amount=args.first_amount,
-        amount_mode=AmountMode(args.amount_mode),
-        amount_step=args.amount_step,
+        strategy_version=args.strategy_version,
         lot_size=args.lot_size,
         fee_rate=args.fee_rate,
         min_fee=args.min_fee,
         slippage_rate=args.slippage_rate,
         price_digits=args.price_digits,
+    )
+    if args.strategy_version == "2.3" and args.sub_grids:
+        plans = []
+        for sub_grid in args.sub_grids:
+            if not sub_grid.get("enabled", True):
+                continue
+            plan_config = GridPlanConfig(
+                **base_kwargs,
+                grid_name=sub_grid["grid_name"],
+                grid_pct=sub_grid["grid_pct"],
+                first_amount=sub_grid["first_amount"],
+                amount_mode=AmountMode(sub_grid.get("amount_mode", "equal")),
+                amount_step=sub_grid.get("amount_step", 0.0),
+                amount_ratio=sub_grid.get("amount_ratio", 1.0),
+                scale_start_level=sub_grid.get("scale_start_level", 1),
+                price_start_level=sub_grid.get("price_start_level", 1),
+                retain_profit=CoreRetainProfitConfig(
+                    enabled=sub_grid.get("retain_profit", {}).get("enabled", False),
+                    multiplier=sub_grid.get("retain_profit", {}).get("multiplier", 1.0),
+                ),
+            )
+            plans.append(build_grid_plan(plan_config, price_context=price_context))
+        return combine_grid_plans(plans), history
+
+    plan_config = GridPlanConfig(
+        **base_kwargs,
+        grid_name="default",
+        grid_pct=args.grid_pct,
+        first_amount=args.first_amount,
+        amount_mode=AmountMode(args.amount_mode),
+        amount_step=args.amount_step,
+        amount_ratio=args.amount_ratio,
+        scale_start_level=args.scale_start_level,
+        price_start_level=args.price_start_level,
+        retain_profit=CoreRetainProfitConfig(
+            enabled=retain_profit_value(args, "enabled", False),
+            multiplier=retain_profit_value(args, "multiplier", 1.0),
+        ),
     )
     return build_grid_plan(plan_config, price_context=price_context), history
 

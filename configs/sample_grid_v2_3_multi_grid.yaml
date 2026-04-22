@@ -1,0 +1,73 @@
+# 网格 2.3：小网、中网、大网共用资金池
+strategy_version: "2.3"
+
+symbol: sh510300
+first_price_mode: fixed
+first_price: 4.0
+high_drawdown_pct: 0.2
+start_date:
+end_date:
+adjust_method: forward
+
+bottom_mode: fixed
+bottom_price: 3.0
+bottom_drawdown_pct: 0.4
+
+# 兼容旧单网格字段；2.3 有 sub_grids 时以子网格配置为准
+grid_pct: 0.05
+first_amount: 10000
+amount_mode: equal
+amount_step: 0
+amount_ratio: 1
+scale_start_level: 1
+
+sub_grids:
+  - grid_name: small
+    enabled: true
+    grid_pct: 0.05
+    first_amount: 8000
+    amount_mode: equal
+    amount_step: 0
+    amount_ratio: 1
+    scale_start_level: 1
+    price_start_level: 1
+    retain_profit:
+      enabled: true
+      multiplier: 1
+
+  - grid_name: medium
+    enabled: true
+    grid_pct: 0.15
+    first_amount: 6000
+    amount_mode: arithmetic
+    amount_step: 500
+    amount_ratio: 1
+    scale_start_level: 2
+    price_start_level: 2
+    retain_profit:
+      enabled: true
+      multiplier: 1
+
+  - grid_name: large
+    enabled: true
+    grid_pct: 0.30
+    first_amount: 4000
+    amount_mode: geometric
+    amount_step: 0
+    amount_ratio: 1.08
+    scale_start_level: 2
+    price_start_level: 2
+    retain_profit:
+      enabled: true
+      multiplier: 1
+
+retain_profit:
+  enabled: true
+  multiplier: 1
+
+lot_size: 100
+fee_rate: 0.0002
+min_fee: 5
+slippage_rate: 0.0005
+price_digits: 3
+basename: sample_config_v2_3_multi_grid

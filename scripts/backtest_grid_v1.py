@@ -12,8 +12,8 @@ if str(PROJECT_ROOT) not in sys.path:
 from src.backtest_v1 import export_backtest, run_grid_v1_backtest
 from src.config_loader import load_config_file
 from src.data_loader import build_price_context, filter_history, load_adjusted_daily_history
-from src.grid_plan import build_grid_plan
-from src.models import AmountMode, BottomMode, FirstPriceMode, GridPlanConfig
+from src.grid_plan import build_grid_plan, combine_grid_plans
+from src.models import AmountMode, BottomMode, FirstPriceMode, GridPlanConfig, RetainProfitConfig
 
 
 OUTPUT_DIR = PROJECT_ROOT / "outputs"
@@ -44,18 +44,32 @@ def namespace_from_config(config: dict) -> Namespace:
         "first_amount": None,
         "amount_mode": AmountMode.EQUAL.value,
         "amount_step": 0.0,
+        "amount_ratio": 1.0,
+        "scale_start_level": 1,
+        "price_start_level": 1,
         "lot_size": 100,
         "fee_rate": 0.0,
         "min_fee": 0.0,
         "slippage_rate": 0.0,
         "price_digits": 3,
         "basename": None,
+        "strategy_version": "1.0",
+        "retain_profit_enabled": False,
+        "retain_profit_multiplier": 1.0,
     }
-    merged = defaults | {key.replace("-", "_"): value for key, value in config.items()}
+    config_items = dict(config)
+    sub_grids = config_items.pop("sub_grids", None)
+    retain_profit = config_items.pop("retain_profit", None)
+    if isinstance(retain_profit, dict):
+        config_items.setdefault("retain_profit_enabled", retain_profit.get("enabled", False))
+        config_items.setdefault("retain_profit_multiplier", retain_profit.get("multiplier", 1.0))
+    merged = defaults | {key.replace("-", "_"): value for key, value in config_items.items()}
+    merged["sub_grids"] = sub_grids
     merged["adjust_method"] = "forward"
     if merged["price_digits"] != 3:
         merged["price_digits"] = 3
-    missing = [key for key in ("symbol", "grid_pct", "first_amount") if merged.get(key) is None]
+    required = ("symbol",) if merged.get("strategy_version") == "2.3" and merged.get("sub_grids") else ("symbol", "grid_pct", "first_amount")
+    missing = [key for key in required if merged.get(key) is None]
     if missing:
         raise ValueError(f"Missing required config keys: {missing}")
     return Namespace(**merged)
@@ -101,19 +115,54 @@ def build_plan_and_history(config_args: Namespace):
         start_date=config_args.start_date,
         end_date=config_args.end_date,
     )
-    plan_config = GridPlanConfig(
+    base_kwargs = dict(
         symbol=config_args.symbol,
         first_price=first_price,
-        grid_pct=config_args.grid_pct,
         bottom_price=bottom_price,
-        first_amount=config_args.first_amount,
-        amount_mode=AmountMode(config_args.amount_mode),
-        amount_step=config_args.amount_step,
+        strategy_version=config_args.strategy_version,
         lot_size=config_args.lot_size,
         fee_rate=config_args.fee_rate,
         min_fee=config_args.min_fee,
         slippage_rate=config_args.slippage_rate,
         price_digits=3,
+    )
+    if config_args.strategy_version == "2.3" and config_args.sub_grids:
+        plans = []
+        for sub_grid in config_args.sub_grids:
+            if not sub_grid.get("enabled", True):
+                continue
+            plan_config = GridPlanConfig(
+                **base_kwargs,
+                grid_name=sub_grid["grid_name"],
+                grid_pct=sub_grid["grid_pct"],
+                first_amount=sub_grid["first_amount"],
+                amount_mode=AmountMode(sub_grid.get("amount_mode", "equal")),
+                amount_step=sub_grid.get("amount_step", 0.0),
+                amount_ratio=sub_grid.get("amount_ratio", 1.0),
+                scale_start_level=sub_grid.get("scale_start_level", 1),
+                price_start_level=sub_grid.get("price_start_level", 1),
+                retain_profit=RetainProfitConfig(
+                    enabled=sub_grid.get("retain_profit", {}).get("enabled", False),
+                    multiplier=sub_grid.get("retain_profit", {}).get("multiplier", 1.0),
+                ),
+            )
+            plans.append(build_grid_plan(plan_config, price_context=price_context))
+        return combine_grid_plans(plans), history
+
+    plan_config = GridPlanConfig(
+        **base_kwargs,
+        grid_name="default",
+        grid_pct=config_args.grid_pct,
+        first_amount=config_args.first_amount,
+        amount_mode=AmountMode(config_args.amount_mode),
+        amount_step=config_args.amount_step,
+        amount_ratio=config_args.amount_ratio,
+        scale_start_level=config_args.scale_start_level,
+        price_start_level=config_args.price_start_level,
+        retain_profit=RetainProfitConfig(
+            enabled=config_args.retain_profit_enabled,
+            multiplier=config_args.retain_profit_multiplier,
+        ),
     )
     return build_grid_plan(plan_config, price_context=price_context), history
 
@@ -129,7 +178,7 @@ def main() -> None:
     paths = export_backtest(trades, equity, days, summary, cli_args.output_dir, basename)
 
     row = summary.iloc[0]
-    print("Grid v1 backtest summary")
+    print(f"Grid {config_args.strategy_version} backtest summary")
     print(f"symbol: {row['symbol']}")
     print(f"start_date: {row['start_date']}")
     print(f"end_date: {row['end_date']}")

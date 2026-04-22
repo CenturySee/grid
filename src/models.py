@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 
 
@@ -17,6 +17,13 @@ class BottomMode(str, Enum):
 class AmountMode(str, Enum):
     EQUAL = "equal"
     ARITHMETIC = "arithmetic"
+    GEOMETRIC = "geometric"
+
+
+@dataclass(frozen=True)
+class RetainProfitConfig:
+    enabled: bool = False
+    multiplier: float = 1.0
 
 
 @dataclass(frozen=True)
@@ -44,8 +51,14 @@ class GridPlanConfig:
     grid_pct: float
     bottom_price: float
     first_amount: float
+    grid_name: str = "default"
+    strategy_version: str = "1.0"
     amount_mode: AmountMode = AmountMode.EQUAL
     amount_step: float = 0.0
+    amount_ratio: float = 1.0
+    scale_start_level: int = 1
+    price_start_level: int = 1
+    retain_profit: RetainProfitConfig = field(default_factory=RetainProfitConfig)
     lot_size: int = 100
     fee_rate: float = 0.0
     min_fee: float = 0.0
@@ -55,6 +68,7 @@ class GridPlanConfig:
 
 @dataclass(frozen=True)
 class GridLevel:
+    grid_name: str
     level_index: int
     buy_price: float
     sell_price: float
@@ -71,6 +85,11 @@ class GridLevel:
     net_sell_amount: float
     expected_profit: float
     expected_return_pct: float
+    expected_sold_shares: int
+    expected_retained_shares: int
+    expected_retained_value: float
+    expected_recover_cost: float
+    expected_sell_mode: str
     cumulative_cost: float
     drawdown_from_first_pct: float
     covers_bottom: bool

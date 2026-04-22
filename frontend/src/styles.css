@@ -63,7 +63,7 @@ button {
 
 .workspace {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 420px;
+  grid-template-columns: minmax(0, 1fr) 440px;
   gap: 14px;
   padding: 14px;
   min-height: 0;
@@ -204,6 +204,110 @@ button {
   cursor: not-allowed;
   background: #f1f3f5;
   color: #98a1ad;
+}
+
+.field .check-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+}
+
+.field .check-field input {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+}
+
+.subgrid-list {
+  display: grid;
+  gap: 10px;
+}
+
+.subgrid-item {
+  padding: 10px;
+  border: 1px solid #e3e6ea;
+  border-radius: 8px;
+  background: #fbfcfd;
+}
+
+.subgrid-header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.subgrid-header::-webkit-details-marker {
+  display: none;
+}
+
+.subgrid-summary-title {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.subgrid-summary-text {
+  min-width: 0;
+  overflow: hidden;
+  color: #68707d;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.subgrid-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.collapse-block {
+  padding: 10px;
+  border: 1px solid #e3e6ea;
+  border-radius: 8px;
+  background: #fbfcfd;
+}
+
+.collapse-block > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.collapse-block > summary::-webkit-details-marker {
+  display: none;
+}
+
+.collapse-block > summary span {
+  color: #1f2733;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.collapse-block > summary small {
+  min-width: 0;
+  overflow: hidden;
+  color: #68707d;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.collapse-fields {
+  margin-top: 10px;
+}
+
+@media (max-width: 760px) {
+  .subgrid-fields {
+    grid-template-columns: 1fr;
+  }
 }
 
 .actions {
